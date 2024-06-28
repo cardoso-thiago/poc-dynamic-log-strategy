@@ -24,6 +24,8 @@ public class DynamicLogLevel {
     private static final int DEFAULT_ERROR_THRESHOLD = 97;
     private static final int DEFAULT_WARN_THRESHOLD = 95;
     private static final int DEFAULT_INFO_THRESHOLD = 90;
+    private static final int DEFAULT_ACTIVE_ERRORS_DEBUG = 5;
+    private static final String DEFAULT_DEBUG_ENABLED = "false";
     private static final LogLevel DEFAULT_STARTING_LOG_LEVEL = LogLevel.ERROR;
 
     private final Logger logger = LoggerFactory.getLogger(DynamicLogLevel.class);
@@ -34,7 +36,9 @@ public class DynamicLogLevel {
     private final int errorThreshold;
     private final int warnThreshold;
     private final int infoThreshold;
+    private final boolean isDebugEnabled;
     private final LogLevel startingLogLevel;
+    private final int activeErrorsDebug;
     private final ScheduledExecutorService scheduler;
 
     public DynamicLogLevel(Environment environment, LoggingSystem loggingSystem) {
@@ -44,6 +48,8 @@ public class DynamicLogLevel {
         this.errorThreshold = getProperty(environment, "error.threshold", DEFAULT_ERROR_THRESHOLD);
         this.warnThreshold = getProperty(environment, "warning.threshold", DEFAULT_WARN_THRESHOLD);
         this.infoThreshold = getProperty(environment, "info.threshold", DEFAULT_INFO_THRESHOLD);
+        this.isDebugEnabled = Boolean.parseBoolean(environment.getProperty("debug.enabled", DEFAULT_DEBUG_ENABLED));
+        this.activeErrorsDebug = getProperty(environment, "active.errors.debug", DEFAULT_ACTIVE_ERRORS_DEBUG);
         this.startingLogLevel = LogLevel.valueOf(environment.getProperty("starting.log.level", DEFAULT_STARTING_LOG_LEVEL.name()));
         loggingSystem.setLogLevel("ROOT", startingLogLevel);
         this.scheduler = Executors.newScheduledThreadPool(1);
@@ -77,10 +83,10 @@ public class DynamicLogLevel {
         LogLevel currentLogLevel = loggingSystem.getLoggerConfiguration("ROOT").getConfiguredLevel();
 
         if (!currentLogLevel.equals(newLogLevel)) {
+            loggingSystem.setLogLevel("ROOT", newLogLevel);
             logger.atLevel(Level.valueOf(newLogLevel.name())).log(
                     MessageFormat.format("Alterando o level de log de {0} para {1}. Nível de sucesso: {2}%",
                             currentLogLevel, newLogLevel, successRate));
-            loggingSystem.setLogLevel("ROOT", newLogLevel);
         }
     }
 
@@ -92,7 +98,12 @@ public class DynamicLogLevel {
         } else if (successRate > infoThreshold) {
             return LogLevel.INFO;
         } else {
-            return LogLevel.DEBUG;
+            if (isDebugEnabled) {
+                if (validationEvents.stream().filter(validationEvent -> !validationEvent.isSuccess()).count() >= activeErrorsDebug) {
+                    return LogLevel.DEBUG;
+                }
+            }
+            return LogLevel.INFO;
         }
     }
 
