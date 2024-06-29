@@ -56,6 +56,15 @@ As seguintes propriedades podem ser configuradas no ambiente para ajustar o comp
 - `active.errors.debug`: Número de erros ativos para habilitar o nível de log DEBUG (default: 5)
 - `starting.log.level`: Nível de log inicial (default: ERROR)
 
+### Mecanismo de RPS (Requests Per Second)
+
+O mecanismo de RPS monitora a taxa de requisições por segundo e ajusta dinamicamente a janela de validação e os thresholds de log com base nessa métrica. Isso é particularmente útil para adaptar o sistema às variações na carga de trabalho e garantir que os logs sejam ajustados de forma apropriada.
+
+#### Propriedades do RPS
+
+- `high.rps`: Define o limite superior de RPS. Se o RPS médio exceder esse valor, a janela de validação é reduzida para melhorar a responsividade do ajuste de log. Os thresholds de validação da mudança do level também são ajustados. (default: 1000)
+- `medium.rps`: Define o limite intermediário de RPS. Se o RPS médio estiver entre `medium.rps` e `high.rps`, a janela de validação é ajustada de forma moderada. Os thresholds de validação da mudança do level também são ajustados. (default: 500)
+
 ## Uso
 
 ### Adicionando um Evento de Validação
