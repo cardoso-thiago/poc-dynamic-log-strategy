@@ -12,7 +12,7 @@ import org.springframework.core.env.Environment;
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
+import java.util.Deque;
 import java.util.concurrent.*;
 
 public class DynamicLogLevel {
@@ -28,7 +28,7 @@ public class DynamicLogLevel {
 
     private final Logger logger = LoggerFactory.getLogger(DynamicLogLevel.class);
 
-    private final List<ValidationEvent> validationEvents;
+    private final Deque<ValidationEvent> validationEvents;
     private final LoggingSystem loggingSystem;
     private final DynamicRps dynamicRps;
     private final int validationWindowInSeconds;
@@ -46,7 +46,7 @@ public class DynamicLogLevel {
     public DynamicLogLevel(Environment environment, LoggingSystem loggingSystem, DynamicRps dynamicRps) {
         this.loggingSystem = loggingSystem;
         this.dynamicRps = dynamicRps;
-        this.validationEvents = new CopyOnWriteArrayList<>();
+        this.validationEvents = new ConcurrentLinkedDeque<>();
         this.validationWindowInSeconds = getProperty(environment, "validation.window.seconds", DEFAULT_VALIDATION_WINDOW_SECONDS);
         this.currentValidationWindow = validationWindowInSeconds;
         this.errorThreshold = getProperty(environment, "error.threshold", DEFAULT_ERROR_THRESHOLD);

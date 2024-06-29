@@ -43,6 +43,9 @@ Este repositório contém a implementação de um mecanismo dinâmico para ajust
 
 4. **Configuração Inicial**:
     - A configuração inicial dos thresholds e outros parâmetros deve ser feita com base em um entendimento detalhado do comportamento do sistema sob diferentes condições de carga e taxa de erro.
+   
+5. **Sensibilidade das mudanças**:
+   - Os valores iniciais e mudanças de acordo com o RPS precisam ser avaliados em mais cenários, pois a mudança de um level para outro pode ficar muito sensível e desencadear mudanças constantes em um cenário de alta carga.
 
 ## Configuração
 
