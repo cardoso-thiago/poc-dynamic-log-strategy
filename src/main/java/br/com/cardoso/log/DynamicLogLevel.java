@@ -78,7 +78,7 @@ public class DynamicLogLevel {
         if (scheduledFuture != null) {
             scheduledFuture.cancel(false);
         }
-        scheduledFuture = scheduler.scheduleAtFixedRate(this::removeOldValidationEvents, 0, newIntervalInSeconds, TimeUnit.SECONDS);
+        scheduledFuture = scheduler.scheduleAtFixedRate(this::removeOldValidationEvents, newIntervalInSeconds, newIntervalInSeconds, TimeUnit.SECONDS);
     }
 
     public void addValidationEvent(boolean isSuccess) {
@@ -143,6 +143,14 @@ public class DynamicLogLevel {
             currentValidationWindow = adjustedValidationWindow;
             updateSchedulerInterval(adjustedValidationWindow);
         }
+        clearValidationEvents(now, adjustedValidationWindow);
+        if (isHysteresisEnabled) {
+            shouldValidateOnEventReceived.set(true);
+        }
+        validateLogLevel();
+    }
+
+    public void clearValidationEvents(LocalDateTime now, int adjustedValidationWindow) {
         validationEvents.removeIf(event -> {
             boolean shouldRemoveEvent = ChronoUnit.SECONDS.between(event.getTimestamp(), now) > adjustedValidationWindow;
             if (shouldRemoveEvent) {
@@ -152,9 +160,5 @@ public class DynamicLogLevel {
             }
             return shouldRemoveEvent;
         });
-        if (isHysteresisEnabled) {
-            shouldValidateOnEventReceived.set(true);
-        }
-        validateLogLevel();
     }
 }
