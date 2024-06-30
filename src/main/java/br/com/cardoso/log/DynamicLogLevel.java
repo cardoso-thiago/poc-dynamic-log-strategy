@@ -152,9 +152,9 @@ public class DynamicLogLevel {
             }
             return shouldRemoveEvent;
         });
-        validateLogLevel();
         if (isHysteresisEnabled) {
             shouldValidateOnEventReceived.set(true);
         }
+        validateLogLevel();
     }
 }
