@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Deque;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DynamicLogLevel {
 
@@ -25,6 +26,7 @@ public class DynamicLogLevel {
     private static final LogLevel DEFAULT_STARTING_LOG_LEVEL = LogLevel.ERROR;
     private static final String DEFAULT_DEBUG_ENABLED = "false";
     private static final String DEFAULT_DYNAMIC_RPS_ENABLED = "false";
+    private static final String DEFAULT_HYSTERESIS_ENABLED = "false";
 
     private final Logger logger = LoggerFactory.getLogger(DynamicLogLevel.class);
 
@@ -40,8 +42,10 @@ public class DynamicLogLevel {
     private final int activeErrorsDebug;
     private final LogLevel startingLogLevel;
     private final boolean isDynamicRpsEnabled;
+    private final boolean isHysteresisEnabled;
     private final ScheduledExecutorService scheduler;
     private ScheduledFuture<?> scheduledFuture;
+    private final AtomicBoolean shouldValidateOnEventReceived = new AtomicBoolean(true);
 
     public DynamicLogLevel(Environment environment, LoggingSystem loggingSystem, DynamicRps dynamicRps) {
         this.loggingSystem = loggingSystem;
@@ -58,6 +62,7 @@ public class DynamicLogLevel {
         loggingSystem.setLogLevel("ROOT", startingLogLevel);
         this.scheduler = Executors.newScheduledThreadPool(1);
         this.isDynamicRpsEnabled = Boolean.parseBoolean(environment.getProperty("dynamic.rps.enabled", DEFAULT_DYNAMIC_RPS_ENABLED));
+        this.isHysteresisEnabled = Boolean.parseBoolean(environment.getProperty("hysteresis.enabled", DEFAULT_HYSTERESIS_ENABLED));
     }
 
     private int getProperty(Environment environment, String key, int defaultValue) {
@@ -81,7 +86,13 @@ public class DynamicLogLevel {
         if (isDynamicRpsEnabled) {
             dynamicRps.incrementRequestCount();
         }
-        validateLogLevel();
+        if (isHysteresisEnabled) {
+            if (shouldValidateOnEventReceived.get()) {
+                validateLogLevel();
+            }
+        } else {
+            validateLogLevel();
+        }
     }
 
     private void validateLogLevel() {
@@ -99,6 +110,9 @@ public class DynamicLogLevel {
 
         if (!currentLogLevel.equals(newLogLevel)) {
             loggingSystem.setLogLevel("ROOT", newLogLevel);
+            if (isHysteresisEnabled) {
+                shouldValidateOnEventReceived.set(false);
+            }
             logger.atLevel(Level.valueOf(newLogLevel.name())).log(
                     MessageFormat.format("Alterando o level de log de {0} para {1}. Nível de sucesso: {2}%",
                             currentLogLevel, newLogLevel, successRate));
@@ -139,5 +153,8 @@ public class DynamicLogLevel {
             return shouldRemoveEvent;
         });
         validateLogLevel();
+        if (isHysteresisEnabled) {
+            shouldValidateOnEventReceived.set(true);
+        }
     }
 }

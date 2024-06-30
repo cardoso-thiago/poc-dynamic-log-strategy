@@ -46,6 +46,7 @@ Este repositório contém a implementação de um mecanismo dinâmico para ajust
    
 5. **Sensibilidade das mudanças**:
    - Os valores iniciais e mudanças de acordo com o RPS precisam ser avaliados em mais cenários, pois a mudança de um level para outro pode ficar muito sensível e desencadear mudanças constantes em um cenário de alta carga.
+   - Foi adicionada uma configuração opcional adicional que introduz um mecanismo de histerese que pode ajudar a prevenir uma quantidade excessiva de mudanças no level do log principalmente em cenários de alta carga e quando ocorre a limpeza de eventos antigos. Mais cenários precisam ser avaliados para determinar a efetividade e o comportamento desejado com e sem o mecanismo. 
 
 ## Configuração
 
@@ -58,6 +59,7 @@ As seguintes propriedades podem ser configuradas no ambiente para ajustar o comp
 - `debug.enabled`: Habilita ou desabilita o nível de log DEBUG (default: false)
 - `active.errors.debug`: Número de erros ativos para habilitar o nível de log DEBUG (default: 5)
 - `starting.log.level`: Nível de log inicial (default: ERROR)
+- `hysteresis.enabled`: Acrescenta ou remove o mecanismo de histerese. Quando habilitado, após identificada uma mudança no level do log, a próxima mudança só será validada na próxima execução da limpeza de eventos antigos, de acordo com a chave `validation.window.seconds`. Com o mecanismo desabilitado, a mudança é validada na limpeza dos eventos antigos, mas também a cada novo evento adicionado. (default: false)
 
 ### Mecanismo de RPS (Requests Per Second)
 
